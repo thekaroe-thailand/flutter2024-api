@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
+const jwt = require('jsonwebtoken');
+
+const key = 'my key of this project';
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -10,6 +13,32 @@ app.use(fileUpload({
         fileSize: 50 * 1024 * 1024 // 50MB
     }
 }));
+
+app.post('/singIn', (req, res) => {
+    const u = req.body.username;
+    const p = req.body.password;
+
+    if (u == 'admin' && p == 'admin') {
+        const payload = {
+            id: 100,
+            name: 'kob',
+            level: 'admin'
+        };
+
+        const token = jwt.sign(payload, key, { expiresIn: '30d' }); // d = day, h = hour, m = month
+
+        res.send({ token: token });
+    } else {
+        res.status(401).send({ message: 'Unauthorized' });
+    }
+})
+
+app.post('/verify', (req, res) => {
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAwLCJuYW1lIjoia29iIiwibGV2ZWwiOiJhZG1pbiIsImlhdCI6MTcyMDAxODA2NiwiZXhwIjoxNzIyNjEwMDY2fQ.gQ-0NRlQE1rYplIyuNdC2muik1SFHyEaGp7Hjr4SM_0';
+    const payload = jwt.verify(token, key);
+
+    res.send({ payload: payload });
+})
 
 app.get('/', (req, res) => {
     res.send('Hello my API');
@@ -31,6 +60,7 @@ app.post('/create', (req, res) => {
                 const salary = item.salary;
 
                 console.log(position, salary);
+
             }
         }
     }
@@ -89,6 +119,37 @@ app.post('/myUpload', (req, res) => {
     console.log(img);
 
     res.send({ message: 'success' })
+})
+
+app.post('/uploadFile', (req, res) => {
+    try {
+        if (req.files != undefined) {
+            if (req.files.myFile != undefined) {
+                const myFile = req.files.myFile;
+
+                if (myFile != undefined) {
+                    const myDate = new Date();
+                    const y = myDate.getFullYear();
+                    const m = myDate.getMonth() + 1;
+                    const d = myDate.getDate();
+                    const h = myDate.getHours();
+                    const mm = myDate.getMinutes();
+                    const s = myDate.getSeconds();
+                    const ms = myDate.getMilliseconds();
+                    const arrExt = myFile.name.split('.');
+                    const ext = arrExt[arrExt.length - 1];
+                    const newName = `${y}${m}${d}${h}${mm}${s}${ms}.${ext}`;
+
+                    myFile.mv('./uploads/' + newName, (err) => {
+                        if (err) throw err;
+                        res.send({ message: 'success' })
+                    });
+                }
+            }
+        }
+    } catch (e) {
+        res.send({ error: e });
+    }
 })
 
 app.listen(3000, () => {
