@@ -14,6 +14,9 @@ app.use(fileUpload({
     }
 }));
 
+app.get('/', (req, res) => {
+    res.send('Hello');
+});
 app.post('/singIn', (req, res) => {
     const u = req.body.username;
     const p = req.body.password;
